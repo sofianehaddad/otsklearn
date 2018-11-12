@@ -4,7 +4,7 @@
 otsklearn
 =========
 
-Simple module to use OT metamodels (Functional Chaos for now) with a simple scikit-learn API (kwargs, fit/predict)
+Simple module to use OT metamodels (only Functional Chaos for now) with the scikit-learn estimator API (fit/predict)
 Currently it's more a proof of concept, not ready for production use.
 
 Examples
