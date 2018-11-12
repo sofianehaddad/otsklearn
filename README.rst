@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/openturns/otsklearn.svg?branch=master
+    :target: https://travis-ci.org/openturns/otsklearn
+
 otsklearn
 =========
 
