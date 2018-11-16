@@ -1,20 +1,21 @@
 import openturns as ot
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, RegressorMixin
 
-class FunctionalChaos(BaseEstimator):
+class FunctionalChaos(BaseEstimator, RegressorMixin):
 
-    def __init__(self, degree=2, sparse=False, enumerate='linear', q=0.4):
+    def __init__(self, degree=2, sparse=False, enumerate='linear', q=0.4, distribution=None):
         super(FunctionalChaos, self).__init__()
         self.degree = degree
         self.sparse = sparse
         self.enumerate = enumerate
         self.q = q
+        self.distribution = distribution
         self.result = None
 
     def fit(self, X, y, **fit_params):
         dimension = X.shape[1]
-
-        distribution = ot.FunctionalChaosAlgorithm.BuildDistribution(X)
+        if self.distribution is None:
+            distribution = ot.FunctionalChaosAlgorithm.BuildDistribution(X)
 
         if self.enumerate == 'linear':
             enumerateFunction = ot.LinearEnumerateFunction(dimension)
@@ -22,10 +23,7 @@ class FunctionalChaos(BaseEstimator):
             enumerateFunction = ot.HyperbolicAnisotropicEnumerateFunction(dimension, self.q)
         else:
             raise ValueError('enumerate should be "linear" or "hyperbolic"')
-        polynomials = []
-        for i in range(dimension):
-            polynomials.append(ot.StandardDistributionPolynomialFactory(distribution.getMarginal(i)))
-
+        polynomials = [ot.StandardDistributionPolynomialFactory(distribution.getMarginal(i)) for i in range(dimension)]
         productBasis = ot.OrthogonalProductPolynomialFactory(polynomials, enumerateFunction)
         adaptiveStrategy = ot.FixedStrategy(productBasis, enumerateFunction.getStrataCumulatedCardinal(self.degree))
         if self.sparse:
@@ -42,9 +40,3 @@ class FunctionalChaos(BaseEstimator):
             raise RuntimeError('call fit first')
 
         return self.result_.getMetaModel()(X)
-
-    #def score(self, X, y):
-        #print('score', self.result.getResiduals()[0])
-        #return 1-self.result.getResiduals()[0]
-
-
