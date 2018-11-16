@@ -1,22 +1,44 @@
-from otsklearn import FunctionalChaos
+import otsklearn
 from sklearn import datasets
 from sklearn.model_selection import GridSearchCV
+import openturns as ot
 
-dataset = datasets.load_iris()
-parameters={'degree':[2,3,4]}
-estimator = FunctionalChaos()
-print(estimator.get_params())
+# load dataset
+dataset = datasets.load_diabetes()
+X = dataset.data
+y = dataset.target
+dim = X.shape[1]
+distribution = ot.ComposedDistribution([ot.HistogramFactory().build(ot.Sample(X).getMarginal(i)) for i in range(dim)])
+
+# Chaos
+estimator = otsklearn.FunctionalChaos(degree=3, distribution=distribution)
+estimator.fit(X, y)
+X8 = X[8,:].reshape(1, dim)
+y8 = y[8].reshape(1)
+print('prediction=', estimator.predict(X8), y8)
+print('score=', estimator.score(X, y))
+print('importance factors', estimator.feature_importances_)
+
+# through grid search
+parameters={'degree':[2, 3, 4]}
 clf = GridSearchCV(estimator, parameters, scoring='r2')
-
-clf.fit(dataset.data, dataset.target)
+clf.fit(X, y)
 print(clf.best_estimator_)
 print(clf.best_params_)
 print(clf.best_score_)
 
-dim = dataset.data.shape[1]
-X = dataset.data[8,:].reshape(1, dim)
-y = dataset.target[8].reshape(1)
-print(X)
-print(clf.predict(X), dataset.target[8])
-print(clf.best_params_)
-print(clf.best_score_)
+# Kriging
+estimator = otsklearn.Kriging()
+estimator.fit(X, y)
+X8 = X[8,:].reshape(1, dim)
+y8 = y[8].reshape(1)
+print('prediction=', estimator.predict(X8), y8)
+print('score=', estimator.score(X, y))
+
+# Tensor
+estimator = otsklearn.TensorApproximation(distribution=distribution)
+estimator.fit(X, y)
+X8 = X[8,:].reshape(1, dim)
+y8 = y[8].reshape(1)
+print('prediction=', estimator.predict(X8), y8)
+print('score=', estimator.score(X, y))
