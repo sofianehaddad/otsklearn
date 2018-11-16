@@ -125,6 +125,8 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
 
     def fit(self, X, y, **fit_params):
         input_dimension = X.shape[1]
+        if self.distribution is None:
+            self.distribution = ot.FunctionalChaosAlgorithm.BuildDistribution(X)
         factoryCollection = [ot.OrthogonalUniVariateFunctionFamily(        ot.OrthogonalUniVariatePolynomialFunctionFactory(ot.StandardDistributionPolynomialFactory(self.distribution.getMarginal(i)))) for i in range(input_dimension)]
         functionFactory = ot.OrthogonalProductFunctionFactory(factoryCollection)
         algo = ot.TensorApproximationAlgorithm(X, y.reshape(-1, 1), self.distribution, functionFactory, [self.nk]*input_dimension, self.max_rank)
