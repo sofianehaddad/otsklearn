@@ -13,7 +13,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             maximum degree
         sparse : bool, optional, default=False
             Whether to use sparse approximation using LARS that prevents overfitting
-        enumerate : str, either linear or hyperbolic
+        enumerate : str, either 'linear' or 'hyperbolic'
             Type of the basis terms domain
         q : float
             Value of the hyperbolic enumerate function shape
@@ -24,7 +24,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self.enumerate = enumerate
         self.q = q
         self.distribution = distribution
-        self.result = None
+        self.result_ = None
 
     def fit(self, X, y, **fit_params):
         dimension = X.shape[1]
