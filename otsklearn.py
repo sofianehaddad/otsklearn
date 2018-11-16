@@ -4,6 +4,20 @@ from sklearn.base import BaseEstimator, RegressorMixin
 class FunctionalChaos(BaseEstimator, RegressorMixin):
 
     def __init__(self, degree=2, sparse=False, enumerate='linear', q=0.4, distribution=None):
+        """
+        Functional chaos estimator.
+
+        Parameters
+        ----------
+        degree : int
+            maximum degree
+        sparse : bool, optional, default=False
+            Whether to use sparse approximation using LARS that prevents overfitting
+        enumerate : str, either linear or hyperbolic
+            Type of the basis terms domain
+        q : float
+            Value of the hyperbolic enumerate function shape
+        """
         super(FunctionalChaos, self).__init__()
         self.degree = degree
         self.sparse = sparse
