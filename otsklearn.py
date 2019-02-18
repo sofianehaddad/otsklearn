@@ -2,6 +2,29 @@ import openturns as ot
 from sklearn.base import BaseEstimator, RegressorMixin
 import numpy as np
 
+
+
+def BuildDistribution(X):
+    #return ot.FunctionalChaosAlgorithm.BuildDistribution(X)
+    input_dimension = X.shape[1]
+    marginals = []
+    for j in range(input_dimension):
+        marginals.append(ot.HistogramFactory().build(X[:,j].reshape(-1, 1)))
+    isIndependent = True
+    for j in range(input_dimension):
+        marginalJ = X[:,j].reshape(-1, 1)
+        for i in range(j + 1, input_dimension):
+            marginalI = X[:,i].reshape(-1, 1)
+            testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ)
+            isIndependent = isIndependent and testResult.getBinaryQualityMeasure()
+    copula = ot.IndependentCopula(input_dimension)
+    if not isIndependent:
+        copula = ot.NormalCopulaFactory().build(X)
+    distribution = ot.ComposedDistribution(marginals, copula)
+    return distribution
+
+
+
 class FunctionalChaos(BaseEstimator, RegressorMixin):
 
     def __init__(self, degree=2, sparse=False, enumerate='linear', q=0.4, distribution=None):
@@ -33,7 +56,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
     def fit(self, X, y, **fit_params):
         input_dimension = X.shape[1]
         if self.distribution is None:
-            self.distribution = ot.FunctionalChaosAlgorithm.BuildDistribution(X)
+            self.distribution = BuildDistribution(X)
         if self.enumerate == 'linear':
             enumerateFunction = ot.LinearEnumerateFunction(input_dimension)
         elif self.enumerate == 'hyperbolic':
@@ -126,7 +149,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
     def fit(self, X, y, **fit_params):
         input_dimension = X.shape[1]
         if self.distribution is None:
-            self.distribution = ot.FunctionalChaosAlgorithm.BuildDistribution(X)
+            self.distribution = BuildDistribution(X)
         factoryCollection = [ot.OrthogonalUniVariateFunctionFamily(        ot.OrthogonalUniVariatePolynomialFunctionFactory(ot.StandardDistributionPolynomialFactory(self.distribution.getMarginal(i)))) for i in range(input_dimension)]
         functionFactory = ot.OrthogonalProductFunctionFactory(factoryCollection)
         algo = ot.TensorApproximationAlgorithm(X, y.reshape(-1, 1), self.distribution, functionFactory, [self.nk]*input_dimension, self.max_rank)

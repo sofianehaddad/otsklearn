@@ -9,10 +9,9 @@ dataset = datasets.load_diabetes()
 X = dataset.data
 y = dataset.target
 dim = X.shape[1]
-distribution = ot.ComposedDistribution([ot.HistogramFactory().build(ot.Sample(X).getMarginal(i)) for i in range(dim)])
 
 # Chaos
-estimator = otsklearn.FunctionalChaos(degree=3, distribution=distribution)
+estimator = otsklearn.FunctionalChaos(degree=3)
 estimator.fit(X, y)
 X8 = X[8,:].reshape(1, dim)
 y8 = y[8].reshape(1)
@@ -37,7 +36,7 @@ print('prediction=', estimator.predict(X8), y8)
 print('score=', estimator.score(X, y))
 
 # Tensor
-estimator = otsklearn.TensorApproximation(distribution=distribution)
+estimator = otsklearn.TensorApproximation()
 estimator.fit(X, y)
 X8 = X[8,:].reshape(1, dim)
 y8 = y[8].reshape(1)
