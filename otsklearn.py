@@ -138,3 +138,25 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         if self._result is None:
             raise RuntimeError('call fit first')
         return self._result.getMetaModel()(X)
+
+class LinearModel(BaseEstimator, RegressorMixin):
+
+    def __init__(self):
+        """
+        Linear model estimator.
+
+        """
+        super(LinearModel, self).__init__()
+        self._result = None
+
+    def fit(self, X, y, **fit_params):
+        input_dimension = X.shape[1]
+        algo = ot.LinearModelAlgorithm(X, y.reshape(-1, 1))
+        algo.run()
+        self._result = algo.getResult()
+        return self
+
+    def predict(self, X):
+        if self._result is None:
+            raise RuntimeError('call fit first')
+        return self._result.getMetaModel()(X)
