@@ -52,19 +52,19 @@ def test_kriging(data):
     estimator.fit(X, y)
     X8 = X[8, :].reshape(1, dim)
 
-    assert np.array(estimator.predict(X8)) == pytest.approx(110, abs=0.1)
-    assert estimator.score(X, y) == pytest.approx(1, abs=0.1)
+    assert np.array(estimator.predict(X8)) == pytest.approx(110, abs=0.01)
+    assert estimator.score(X, y) == 1
 
 
 def test_tensor(data):
     X, y, dim, distribution = data
 
-    estimator = otsklearn.TensorApproximation(distribution=distribution)
+    estimator = otsklearn.TensorApproximation(2, 5, distribution=distribution)
     estimator.fit(X, y)
     X8 = X[8, :].reshape(1, dim)
 
-    assert np.array(estimator.predict(X8)) == pytest.approx(-3.58, abs=0.1)
-    assert estimator.score(X, y) == pytest.approx(-1.14, abs=0.1)
+    assert np.array(estimator.predict(X8)) == pytest.approx(145.16, abs=0.1)
+    assert estimator.score(X, y) == pytest.approx(0.59, abs=0.1)
 
 
 @pytest.mark.skipif(LooseVersion(ot.__version__) < '1.13',
