@@ -25,7 +25,7 @@ def BuildDistribution(X):
 
 class FunctionalChaos(BaseEstimator, RegressorMixin):
 
-    def __init__(self, degree=2, sparse=False, enumerate='linear', q=0.4, distribution=None):
+    def __init__(self, degree=2, sparse=False, enumeratef='linear', q=0.4, distribution=None):
         """Functional chaos estimator.
 
         Parameters
@@ -34,7 +34,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             maximum degree
         sparse : bool, optional, default=False
             Whether to use sparse approximation using LARS that prevents overfitting
-        enumerate : str, either 'linear' or 'hyperbolic'
+        enumeratef : str, either 'linear' or 'hyperbolic'
             Type of the basis terms domain
         q : float
             Value of the hyperbolic enumerate function shape
@@ -46,7 +46,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         super(FunctionalChaos, self).__init__()
         self.degree = degree
         self.sparse = sparse
-        self.enumerate = enumerate
+        self.enumeratef = enumeratef
         self.q = q
         self.distribution = distribution
         self._result = None
@@ -69,13 +69,13 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         input_dimension = X.shape[1]
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
-        if self.enumerate == 'linear':
+        if self.enumeratef == 'linear':
             enumerateFunction = ot.LinearEnumerateFunction(input_dimension)
-        elif self.enumerate == 'hyperbolic':
+        elif self.enumeratef == 'hyperbolic':
             enumerateFunction = ot.HyperbolicAnisotropicEnumerateFunction(
                 input_dimension, self.q)
         else:
-            raise ValueError('enumerate should be "linear" or "hyperbolic"')
+            raise ValueError('enumeratef should be "linear" or "hyperbolic"')
         polynomials = [ot.StandardDistributionPolynomialFactory(
             self.distribution.getMarginal(i)) for i in range(input_dimension)]
         productBasis = ot.OrthogonalProductPolynomialFactory(
