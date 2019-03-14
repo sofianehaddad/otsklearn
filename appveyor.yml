@@ -1,14 +1,15 @@
 install:
   - set PATH=C:\Miniconda36-x64;C:\Miniconda36-x64\Scripts;%PATH%
   - conda config --add channels conda-forge
-  - conda install -y openturns scikit-learn
+  - conda install -y openturns scikit-learn pytest
 
 build_script:
   - python setup.py install
-  - py.test test/
+  - pytest
+
   # run tests with py2.7
   - conda create -y -n py27 python=2.7
   - activate py27
-  - conda install -y openturns scikit-learn
+  - conda install -y openturns scikit-learn pytest coverage
   - python setup.py install
-  - py.test test/
+  - pytest
