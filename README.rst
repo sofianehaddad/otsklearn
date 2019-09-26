@@ -17,6 +17,6 @@ Examples
 >>> estimator = FunctionalChaos()
 >>> print(estimator.get_params())
 >>> clf = GridSearchCV(estimator, parameters, scoring='r2')
->>> clf.fit(dataset.data, dataset.target)
+>>> clf.fit(dataset.data, dataset.target.reshape(-1,1))
 >>> print(clf.best_estimator_)
 
