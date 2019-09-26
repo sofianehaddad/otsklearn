@@ -68,7 +68,12 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         """
         if len(X) == 0:
             raise ValueError("Can not perform chaos expansion with empty sample")
+        # check data type is accurate
+        if (len(np.shape(X)) != 2):
+            raise ValueError("X has incorrect shape.")
         input_dimension = len(X[1])
+        if (len(np.shape(y)) != 2):
+            raise ValueError("y has incorrect shape.")
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
         if self.enumeratef == 'linear':
@@ -162,7 +167,12 @@ class Kriging(BaseEstimator, RegressorMixin):
         """
         if len(X) == 0:
             raise ValueError("Can not perform a kriging algorithm with empty sample")
+        # check data type is accurate
+        if (len(np.shape(X)) != 2):
+            raise ValueError("X has incorrect shape.")
         input_dimension = len(X[1])
+        if (len(np.shape(y)) != 2):
+            raise ValueError("y has incorrect shape.")
         covarianceModel = eval('ot.' + self.kernel + "(" + str(input_dimension) + ")")
         basisCollection = eval('ot.' + self.basis +
                                "BasisFactory(" + str(input_dimension) + ").build()")
@@ -241,7 +251,12 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         """
         if len(X) == 0:
             raise ValueError("Can not perform a tensor approximation with empty sample")
+        # check data type is accurate
+        if (len(np.shape(X)) != 2):
+            raise ValueError("X has incorrect shape.")
         input_dimension = len(X[1])
+        if (len(np.shape(y)) != 2):
+            raise ValueError("y has incorrect shape.")
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
         factoryCollection = [ot.OrthogonalUniVariateFunctionFamily(ot.OrthogonalUniVariatePolynomialFunctionFactory(
