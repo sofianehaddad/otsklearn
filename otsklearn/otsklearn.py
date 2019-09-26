@@ -5,15 +5,15 @@ import numpy as np
 
 def BuildDistribution(X):
     # return ot.FunctionalChaosAlgorithm.BuildDistribution(X)
-    input_dimension = X.shape[1]
+    input_dimension = len(X[1])
     marginals = []
     for j in range(input_dimension):
-        marginals.append(ot.HistogramFactory().build(X[:, j].reshape(-1, 1)))
+        marginals.append(ot.HistogramFactory().build(X[:, j:j+1]))
     isIndependent = True
     for j in range(input_dimension):
-        marginalJ = X[:, j].reshape(-1, 1)
+        marginalJ = X[:, j:j+1]
         for i in range(j + 1, input_dimension):
-            marginalI = X[:, i].reshape(-1, 1)
+            marginalI = X[:, i:i+1]
             testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ)
             isIndependent = isIndependent and testResult.getBinaryQualityMeasure()
     copula = ot.IndependentCopula(input_dimension)
@@ -66,7 +66,9 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        input_dimension = X.shape[1]
+        if len(X) == 0:
+            raise ValueError("Can not perform chaos expansion with empty sample")
+        input_dimension = len(X[1])
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
         if self.enumeratef == 'linear':
@@ -86,9 +88,9 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             projectionStrategy = ot.LeastSquaresStrategy(
                 ot.LeastSquaresMetaModelSelectionFactory(ot.LARS(), ot.CorrectedLeaveOneOut()))
         else:
-            projectionStrategy = ot.LeastSquaresStrategy(X, y.reshape(-1, 1))
+            projectionStrategy = ot.LeastSquaresStrategy(X, y)
         algo = ot.FunctionalChaosAlgorithm(
-            X, y.reshape(-1, 1), self.distribution, adaptiveStrategy, projectionStrategy)
+            X, y, self.distribution, adaptiveStrategy, projectionStrategy)
         algo.run()
         self._result = algo.getResult()
         output_dimension = self._result.getMetaModel().getOutputDimension()
@@ -158,12 +160,14 @@ class Kriging(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        input_dimension = X.shape[1]
+        if len(X) == 0:
+            raise ValueError("Can not perform a kriging algorithm with empty sample")
+        input_dimension = len(X[1])
         covarianceModel = eval('ot.' + self.kernel + "(" + str(input_dimension) + ")")
         basisCollection = eval('ot.' + self.basis +
                                "BasisFactory(" + str(input_dimension) + ").build()")
         algo = ot.KrigingAlgorithm(
-            X, y.reshape(-1, 1), covarianceModel, basisCollection, True)
+            X, y, covarianceModel, basisCollection, True)
         algo.run()
         self._result = algo.getResult()
         return self
@@ -235,14 +239,16 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        input_dimension = X.shape[1]
+        if len(X) == 0:
+            raise ValueError("Can not perform a tensor approximation with empty sample")
+        input_dimension = len(X[1])
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
         factoryCollection = [ot.OrthogonalUniVariateFunctionFamily(ot.OrthogonalUniVariatePolynomialFunctionFactory(
             ot.StandardDistributionPolynomialFactory(self.distribution.getMarginal(i))))
                              for i in range(input_dimension)]
         functionFactory = ot.OrthogonalProductFunctionFactory(factoryCollection)
-        algo = ot.TensorApproximationAlgorithm(X, y.reshape(-1, 1),
+        algo = ot.TensorApproximationAlgorithm(X, y,
                                                self.distribution,
                                                functionFactory,
                                                [self.nk] * input_dimension,
@@ -292,7 +298,7 @@ class LinearModel(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        algo = ot.LinearModelAlgorithm(X, y.reshape(-1, 1))
+        algo = ot.LinearModelAlgorithm(X, y)
         algo.run()
         self._result = algo.getResult()
         return self
