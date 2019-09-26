@@ -3,7 +3,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 import numpy as np
 
 
-def BuildDistribution(X):
+def BuildDistribution(X, level=0.01):
     # return ot.FunctionalChaosAlgorithm.BuildDistribution(X)
     input_dimension = len(X[1])
     marginals = []
@@ -14,7 +14,7 @@ def BuildDistribution(X):
         marginalJ = X[:, j:j+1]
         for i in range(j + 1, input_dimension):
             marginalI = X[:, i:i+1]
-            testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ)
+            testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ, level)
             isIndependent = isIndependent and testResult.getBinaryQualityMeasure()
     copula = ot.IndependentCopula(input_dimension)
     if not isIndependent:
