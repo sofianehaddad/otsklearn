@@ -25,7 +25,8 @@ def BuildDistribution(X, level=0.01):
 
 class FunctionalChaos(BaseEstimator, RegressorMixin):
 
-    def __init__(self, degree=2, sparse=False, enumeratef='linear', q=0.4, distribution=None):
+    def __init__(self, degree=2, sparse=False, enumeratef='linear', q=0.7,
+                 sparse_fitting_algorithm="cloo", distribution=None):
         """Functional chaos estimator.
 
         Parameters
@@ -38,6 +39,8 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             Type of the basis terms domain
         q : float
             Value of the hyperbolic enumerate function shape
+        sparse_fitting_algorithm : str, either 'cloo' or 'kfolf'
+            Type of fitting algorithm that should be used in case of sparse algorithm
         distribution : :py:class:`openturns.Distribution`, default=None
             Distribution of the inputs
             If not provided, the distribution is estimated from the sample
@@ -49,6 +52,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self.enumeratef = enumeratef
         self.q = q
         self.distribution = distribution
+        self.sparse_fitting_algorithm = sparse_fitting_algorithm
         self._result = None
 
     def fit(self, X, y, **fit_params):
@@ -90,8 +94,14 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         adaptiveStrategy = ot.FixedStrategy(
             productBasis, enumerateFunction.getStrataCumulatedCardinal(self.degree))
         if self.sparse:
+            # Filter according to the sparse_fitting_algorithm key
+            if self.sparse_fitting_algorithm == "cloo":
+                fitting_algorithm = ot.CorrectedLeaveOneOut()
+            else:
+                fitting_algorithm = ot.KFold()
+            # Define the correspondinding projection strategy
             projectionStrategy = ot.LeastSquaresStrategy(
-                ot.LeastSquaresMetaModelSelectionFactory(ot.LARS(), ot.CorrectedLeaveOneOut()))
+                ot.LeastSquaresMetaModelSelectionFactory(ot.LARS(), fitting_algorithm))
         else:
             projectionStrategy = ot.LeastSquaresStrategy(X, y)
         algo = ot.FunctionalChaosAlgorithm(
