@@ -139,7 +139,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         """
         if self._result is None:
             raise RuntimeError('call fit first')
-        return self._result.getMetaModel()(X)
+        return np.array(self._result.getMetaModel()(X))
 
 
 class Kriging(BaseEstimator, RegressorMixin):
@@ -214,12 +214,13 @@ class Kriging(BaseEstimator, RegressorMixin):
         if self._result is None:
             raise RuntimeError('call fit first')
 
-        y_mean = self._result.getMetaModel()(X)
+        y_mean = np.array(self._result.getMetaModel()(X))
 
         if return_std:
-            y_std = self._result.getConditionalCovariance(X)
-            y_std = ot.Sample([np.sqrt(y_std[i, i])
-                               for i in range(y_std.getNbRows())], 1)
+            # Do not perfom conditional covariance on sample as it is compute
+            # a full covariance matrix & we focus only on diagonal
+            # TODO update using new API (getConditionalVariance)
+            y_std = np.array([self._result.getConditionalCovariance(x) for x in X])
             return y_mean, y_std
         else:
             return y_mean
@@ -298,7 +299,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         """
         if self._result is None:
             raise RuntimeError('call fit first')
-        return self._result.getMetaModel()(X)
+        return np.array(self._result.getMetaModel()(X))
 
 
 class LinearModel(BaseEstimator, RegressorMixin):
@@ -344,4 +345,4 @@ class LinearModel(BaseEstimator, RegressorMixin):
         """
         if self._result is None:
             raise RuntimeError('call fit first')
-        return self._result.getMetaModel()(X)
+        return np.array(self._result.getMetaModel()(X))
