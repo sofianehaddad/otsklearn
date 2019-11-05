@@ -13,7 +13,7 @@ def data():
     """Load diabetes dataset."""
     dataset = datasets.load_diabetes()
     X = dataset.data
-    y = dataset.target
+    y = dataset.target.reshape(-1,1)
     dim = X.shape[1]
     distribution = ot.ComposedDistribution([ot.HistogramFactory().build(ot.Sample(X).getMarginal(i))
                                             for i in range(dim)])

@@ -3,18 +3,18 @@ from sklearn.base import BaseEstimator, RegressorMixin
 import numpy as np
 
 
-def BuildDistribution(X):
+def BuildDistribution(X, level=0.01):
     # return ot.FunctionalChaosAlgorithm.BuildDistribution(X)
-    input_dimension = X.shape[1]
+    input_dimension = len(X[1])
     marginals = []
     for j in range(input_dimension):
-        marginals.append(ot.HistogramFactory().build(X[:, j].reshape(-1, 1)))
+        marginals.append(ot.HistogramFactory().build(X[:, j:j+1]))
     isIndependent = True
     for j in range(input_dimension):
-        marginalJ = X[:, j].reshape(-1, 1)
+        marginalJ = X[:, j:j+1]
         for i in range(j + 1, input_dimension):
-            marginalI = X[:, i].reshape(-1, 1)
-            testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ)
+            marginalI = X[:, i:i+1]
+            testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ, level)
             isIndependent = isIndependent and testResult.getBinaryQualityMeasure()
     copula = ot.IndependentCopula(input_dimension)
     if not isIndependent:
@@ -25,7 +25,8 @@ def BuildDistribution(X):
 
 class FunctionalChaos(BaseEstimator, RegressorMixin):
 
-    def __init__(self, degree=2, sparse=False, enumeratef='linear', q=0.4, distribution=None):
+    def __init__(self, degree=2, sparse=False, enumeratef='linear', q=0.7,
+                 sparse_fitting_algorithm="cloo", distribution=None):
         """Functional chaos estimator.
 
         Parameters
@@ -38,6 +39,8 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             Type of the basis terms domain
         q : float
             Value of the hyperbolic enumerate function shape
+        sparse_fitting_algorithm : str, either 'cloo' or 'kfolf'
+            Type of fitting algorithm that should be used in case of sparse algorithm
         distribution : :py:class:`openturns.Distribution`, default=None
             Distribution of the inputs
             If not provided, the distribution is estimated from the sample
@@ -49,6 +52,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self.enumeratef = enumeratef
         self.q = q
         self.distribution = distribution
+        self.sparse_fitting_algorithm = sparse_fitting_algorithm
         self._result = None
 
     def fit(self, X, y, **fit_params):
@@ -66,7 +70,14 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        input_dimension = X.shape[1]
+        if len(X) == 0:
+            raise ValueError("Can not perform chaos expansion with empty sample")
+        # check data type is accurate
+        if (len(np.shape(X)) != 2):
+            raise ValueError("X has incorrect shape.")
+        input_dimension = len(X[1])
+        if (len(np.shape(y)) != 2):
+            raise ValueError("y has incorrect shape.")
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
         if self.enumeratef == 'linear':
@@ -83,12 +94,18 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         adaptiveStrategy = ot.FixedStrategy(
             productBasis, enumerateFunction.getStrataCumulatedCardinal(self.degree))
         if self.sparse:
+            # Filter according to the sparse_fitting_algorithm key
+            if self.sparse_fitting_algorithm == "cloo":
+                fitting_algorithm = ot.CorrectedLeaveOneOut()
+            else:
+                fitting_algorithm = ot.KFold()
+            # Define the correspondinding projection strategy
             projectionStrategy = ot.LeastSquaresStrategy(
-                ot.LeastSquaresMetaModelSelectionFactory(ot.LARS(), ot.CorrectedLeaveOneOut()))
+                ot.LeastSquaresMetaModelSelectionFactory(ot.LARS(), fitting_algorithm))
         else:
-            projectionStrategy = ot.LeastSquaresStrategy(X, y.reshape(-1, 1))
+            projectionStrategy = ot.LeastSquaresStrategy(X, y)
         algo = ot.FunctionalChaosAlgorithm(
-            X, y.reshape(-1, 1), self.distribution, adaptiveStrategy, projectionStrategy)
+            X, y, self.distribution, adaptiveStrategy, projectionStrategy)
         algo.run()
         self._result = algo.getResult()
         output_dimension = self._result.getMetaModel().getOutputDimension()
@@ -122,7 +139,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         """
         if self._result is None:
             raise RuntimeError('call fit first')
-        return self._result.getMetaModel()(X)
+        return np.array(self._result.getMetaModel()(X))
 
 
 class Kriging(BaseEstimator, RegressorMixin):
@@ -158,12 +175,19 @@ class Kriging(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        input_dimension = X.shape[1]
+        if len(X) == 0:
+            raise ValueError("Can not perform a kriging algorithm with empty sample")
+        # check data type is accurate
+        if (len(np.shape(X)) != 2):
+            raise ValueError("X has incorrect shape.")
+        input_dimension = len(X[1])
+        if (len(np.shape(y)) != 2):
+            raise ValueError("y has incorrect shape.")
         covarianceModel = eval('ot.' + self.kernel + "(" + str(input_dimension) + ")")
         basisCollection = eval('ot.' + self.basis +
                                "BasisFactory(" + str(input_dimension) + ").build()")
         algo = ot.KrigingAlgorithm(
-            X, y.reshape(-1, 1), covarianceModel, basisCollection, True)
+            X, y, covarianceModel, basisCollection, True)
         algo.run()
         self._result = algo.getResult()
         return self
@@ -190,12 +214,13 @@ class Kriging(BaseEstimator, RegressorMixin):
         if self._result is None:
             raise RuntimeError('call fit first')
 
-        y_mean = self._result.getMetaModel()(X)
+        y_mean = np.array(self._result.getMetaModel()(X))
 
         if return_std:
-            y_std = self._result.getConditionalCovariance(X)
-            y_std = ot.Sample([np.sqrt(y_std[i, i])
-                               for i in range(y_std.getNbRows())], 1)
+            # Do not perfom conditional covariance on sample as it is compute
+            # a full covariance matrix & we focus only on diagonal
+            # TODO update using new API (getConditionalVariance)
+            y_std = np.array([self._result.getConditionalCovariance(x) for x in X])
             return y_mean, y_std
         else:
             return y_mean
@@ -235,14 +260,21 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        input_dimension = X.shape[1]
+        if len(X) == 0:
+            raise ValueError("Can not perform a tensor approximation with empty sample")
+        # check data type is accurate
+        if (len(np.shape(X)) != 2):
+            raise ValueError("X has incorrect shape.")
+        input_dimension = len(X[1])
+        if (len(np.shape(y)) != 2):
+            raise ValueError("y has incorrect shape.")
         if self.distribution is None:
             self.distribution = BuildDistribution(X)
         factoryCollection = [ot.OrthogonalUniVariateFunctionFamily(ot.OrthogonalUniVariatePolynomialFunctionFactory(
             ot.StandardDistributionPolynomialFactory(self.distribution.getMarginal(i))))
                              for i in range(input_dimension)]
         functionFactory = ot.OrthogonalProductFunctionFactory(factoryCollection)
-        algo = ot.TensorApproximationAlgorithm(X, y.reshape(-1, 1),
+        algo = ot.TensorApproximationAlgorithm(X, y,
                                                self.distribution,
                                                functionFactory,
                                                [self.nk] * input_dimension,
@@ -267,7 +299,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         """
         if self._result is None:
             raise RuntimeError('call fit first')
-        return self._result.getMetaModel()(X)
+        return np.array(self._result.getMetaModel()(X))
 
 
 class LinearModel(BaseEstimator, RegressorMixin):
@@ -292,7 +324,7 @@ class LinearModel(BaseEstimator, RegressorMixin):
         self : returns an instance of self.
 
         """
-        algo = ot.LinearModelAlgorithm(X, y.reshape(-1, 1))
+        algo = ot.LinearModelAlgorithm(X, y)
         algo.run()
         self._result = algo.getResult()
         return self
@@ -313,4 +345,4 @@ class LinearModel(BaseEstimator, RegressorMixin):
         """
         if self._result is None:
             raise RuntimeError('call fit first')
-        return self._result.getMetaModel()(X)
+        return np.array(self._result.getMetaModel()(X))
