@@ -259,9 +259,9 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         Parameters
         ----------
         nk : int
-            Covariance model type
-        max_rank : max_rank
-            Basis type
+            The size of the basis for each component
+        max_rank : int
+            The maximum rank
         """
         super(TensorApproximation, self).__init__()
         self.nk = nk
