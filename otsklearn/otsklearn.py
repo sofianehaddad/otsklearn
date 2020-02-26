@@ -1,5 +1,6 @@
 import openturns as ot
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
 
@@ -53,7 +54,6 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self.q = q
         self.distribution = distribution
         self.sparse_fitting_algorithm = sparse_fitting_algorithm
-        self._result = None
 
     def fit(self, X, y, **fit_params):
         """Fit PC regression model.
@@ -137,8 +137,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             Predictions at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
+        check_is_fitted(self)
         return np.array(self._result.getMetaModel()(X))
 
 
@@ -165,7 +164,6 @@ class Kriging(BaseEstimator, RegressorMixin):
         super(Kriging, self).__init__()
         self.kernel = kernel
         self.basis = basis
-        self._result = None
         self.n_iter_opt = n_iter_opt
         self.normalize_data = normalize_data
         self.linalg_meth = str(linalg_meth).upper()
@@ -235,9 +233,7 @@ class Kriging(BaseEstimator, RegressorMixin):
             Standard deviation of predictive distribution at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
-
+        check_is_fitted(self)
         y_mean = np.array(self._result.getMetaModel()(X))
 
         if return_std:
@@ -267,7 +263,6 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         self.nk = nk
         self.max_rank = max_rank
         self.distribution = distribution
-        self._result = None
 
     def fit(self, X, y, **fit_params):
         """Fit Tensor regression model.
@@ -321,8 +316,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
             Predictions at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
+        check_is_fitted(self)
         return np.array(self._result.getMetaModel()(X))
 
 
@@ -331,7 +325,6 @@ class LinearModel(BaseEstimator, RegressorMixin):
     def __init__(self):
         """Linear model estimator."""
         super(LinearModel, self).__init__()
-        self._result = None
 
     def fit(self, X, y, **fit_params):
         """Fit Linear regression model.
@@ -367,6 +360,5 @@ class LinearModel(BaseEstimator, RegressorMixin):
             Predictions at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
+        check_is_fitted(self)
         return np.array(self._result.getMetaModel()(X))

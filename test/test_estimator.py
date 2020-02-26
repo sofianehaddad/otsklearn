@@ -78,3 +78,4 @@ def test_linear(data):
     y8 = y[8].reshape(1)
     print('prediction=', estimator.predict(X8), y8)
     print('score=', estimator.score(X, y))
+
