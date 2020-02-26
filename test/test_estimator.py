@@ -52,7 +52,7 @@ def test_kriging(data):
     estimator.fit(X, y)
     X8 = X[8, :].reshape(1, dim)
 
-    assert np.array(estimator.predict(X8)) == pytest.approx(110, abs=0.01)
+    assert estimator.predict(X8) == pytest.approx(110, abs=0.01)
     assert estimator.score(X, y) == 1
 
 
@@ -61,9 +61,9 @@ def test_tensor(data):
 
     estimator = otsklearn.TensorApproximation(2, 5, distribution=distribution)
     estimator.fit(X, y)
-    X8 = X[8, :].reshape(1, dim)
+    X8 = X[8, :]
 
-    assert np.array(estimator.predict(X8)) == pytest.approx(145.16, abs=0.1)
+    assert estimator.predict(X8) == pytest.approx(145.16, abs=0.1)
     assert estimator.score(X, y) == pytest.approx(0.59, abs=0.1)
 
 
@@ -74,8 +74,7 @@ def test_linear(data):
 
     estimator = otsklearn.LinearModel()
     estimator.fit(X, y)
-    X8 = X[8, :].reshape(1, dim)
-    y8 = y[8].reshape(1)
-    print('prediction=', estimator.predict(X8), y8)
-    print('score=', estimator.score(X, y))
+    X8 = X[8, :]
+    assert estimator.predict(X8) == pytest.approx(158.8, abs=0.1)
+    assert estimator.score(X, y) == pytest.approx(0.517, abs=0.1)
 
