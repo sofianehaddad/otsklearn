@@ -144,21 +144,31 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
 
 class Kriging(BaseEstimator, RegressorMixin):
 
-    def __init__(self, kernel='SquaredExponential', basis='Constant'):
+    def __init__(self, kernel='SquaredExponential', basis='Constant',
+                 n_iter_opt = 100, normalize_data = True, linalg_meth = "LAPACK"):
         """Kriging estimator.
 
         Parameters
         ----------
-        kernel : str
+        kernel : str or :py:class:`openturns.CovarianceModel`
             Covariance model type
-        basis : str
+        basis : str or :py:class:`openturns.Basis`
             Basis type
-
+        n_iter_opt : int
+            Maximal number of optimization iterations
+        normalize_data : bool
+            Tells whether input data should be normalized or not.
+        linalg_meth : str
+            Select the linear algebra
+            Values are LAPACK or HMAT
         """
         super(Kriging, self).__init__()
         self.kernel = kernel
         self.basis = basis
         self._result = None
+        self.n_iter_opt = n_iter_opt
+        self.normalize_data = normalize_data
+        self.linalg_meth = str(linalg_meth).upper()
 
     def fit(self, X, y, **fit_params):
         """Fit Kriging regression model.
@@ -183,11 +193,25 @@ class Kriging(BaseEstimator, RegressorMixin):
         input_dimension = len(X[1])
         if (len(np.shape(y)) != 2):
             raise ValueError("y has incorrect shape.")
-        covarianceModel = eval('ot.' + self.kernel + "(" + str(input_dimension) + ")")
-        basisCollection = eval('ot.' + self.basis +
-                               "BasisFactory(" + str(input_dimension) + ").build()")
+
+        if type(self.kernel) is str:
+            covarianceModel = eval('ot.' + self.kernel + "(" + str(input_dimension) + ")")
+        else :
+            covarianceModel = ot.CovarianceModel(self.kernel)
+        if type(self.basis) is str:
+            basisCollection = eval('ot.' + self.basis +
+                                   "BasisFactory(" + str(input_dimension) + ").build()")
+        else:
+            basisCollection = ot.Basis(self.basis)
+        ot.ResourceMap.SetAsString("KrigingAlgorithm-LinearAlgebra",  self.linalg_meth)
         algo = ot.KrigingAlgorithm(
-            X, y, covarianceModel, basisCollection, True)
+            X, y, covarianceModel, basisCollection, self.normalize_data)
+        if self.n_iter_opt:
+            opt_algo = algo.getOptimizationAlgorithm()
+            opt_algo.setMaximumIterationNumber(self.n_iter_opt)
+            algo.setOptimizationAlgorithm(opt_algo)
+        else:
+            algo.setOptimizeParameters(False)
         algo.run()
         self._result = algo.getResult()
         return self
@@ -235,9 +259,9 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         Parameters
         ----------
         nk : int
-            Covariance model type
-        max_rank : max_rank
-            Basis type
+            The size of the basis for each component
+        max_rank : int
+            The maximum rank
         """
         super(TensorApproximation, self).__init__()
         self.nk = nk
