@@ -166,7 +166,7 @@ class Kriging(BaseEstimator, RegressorMixin):
         self.basis = basis
         self.n_iter_opt = n_iter_opt
         self.normalize_data = normalize_data
-        self.linalg_meth = str(linalg_meth).upper()
+        self.linalg_meth = linalg_meth
 
     def fit(self, X, y, **fit_params):
         """Fit Kriging regression model.
@@ -201,7 +201,8 @@ class Kriging(BaseEstimator, RegressorMixin):
                                    "BasisFactory(" + str(input_dimension) + ").build()")
         else:
             basisCollection = ot.Basis(self.basis)
-        ot.ResourceMap.SetAsString("KrigingAlgorithm-LinearAlgebra",  self.linalg_meth)
+        ot.ResourceMap.SetAsString(
+            "KrigingAlgorithm-LinearAlgebra",  str(self.linalg_meth).upper())
         algo = ot.KrigingAlgorithm(
             X, y, covarianceModel, basisCollection, self.normalize_data)
         if self.n_iter_opt:
