@@ -107,11 +107,11 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         algo = ot.FunctionalChaosAlgorithm(
             X, y, self.distribution, adaptiveStrategy, projectionStrategy)
         algo.run()
-        self._result = algo.getResult()
-        output_dimension = self._result.getMetaModel().getOutputDimension()
+        self.result_ = algo.getResult()
+        output_dimension = self.result_.getMetaModel().getOutputDimension()
 
         # sensitivity
-        si = ot.FunctionalChaosSobolIndices(self._result)
+        si = ot.FunctionalChaosSobolIndices(self.result_)
         if output_dimension == 1:
             self.feature_importances_ = [
                 si.getSobolIndex(i) for i in range(input_dimension)]
@@ -138,7 +138,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
 
         """
         check_is_fitted(self)
-        return np.array(self._result.getMetaModel()(X))
+        return np.array(self.result_.getMetaModel()(X))
 
 
 class Kriging(BaseEstimator, RegressorMixin):
@@ -212,7 +212,7 @@ class Kriging(BaseEstimator, RegressorMixin):
         else:
             algo.setOptimizeParameters(False)
         algo.run()
-        self._result = algo.getResult()
+        self.result_ = algo.getResult()
         return self
 
     def predict(self, X, return_std=False):
@@ -235,13 +235,13 @@ class Kriging(BaseEstimator, RegressorMixin):
 
         """
         check_is_fitted(self)
-        y_mean = np.array(self._result.getMetaModel()(X))
+        y_mean = np.array(self.result_.getMetaModel()(X))
 
         if return_std:
             # Do not perfom conditional covariance on sample as it is compute
             # a full covariance matrix & we focus only on diagonal
             # TODO update using new API (getConditionalVariance)
-            y_std = np.array([self._result.getConditionalCovariance(x) for x in X])
+            y_std = np.array([self.result_.getConditionalCovariance(x) for x in X])
             return y_mean, y_std
         else:
             return y_mean
@@ -300,7 +300,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
                                                [self.nk] * input_dimension,
                                                self.max_rank)
         algo.run()
-        self._result = algo.getResult()
+        self.result_ = algo.getResult()
         return self
 
     def predict(self, X):
@@ -318,7 +318,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
 
         """
         check_is_fitted(self)
-        return np.array(self._result.getMetaModel()(X))
+        return np.array(self.result_.getMetaModel()(X))
 
 
 class LinearModel(BaseEstimator, RegressorMixin):
@@ -344,7 +344,7 @@ class LinearModel(BaseEstimator, RegressorMixin):
         """
         algo = ot.LinearModelAlgorithm(X, y)
         algo.run()
-        self._result = algo.getResult()
+        self.result_ = algo.getResult()
         return self
 
     def predict(self, X):
@@ -362,4 +362,4 @@ class LinearModel(BaseEstimator, RegressorMixin):
 
         """
         check_is_fitted(self)
-        return np.array(self._result.getMetaModel()(X))
+        return np.array(self.result_.getMetaModel()(X))
