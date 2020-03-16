@@ -1,5 +1,6 @@
 import openturns as ot
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
 
@@ -53,7 +54,6 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         self.q = q
         self.distribution = distribution
         self.sparse_fitting_algorithm = sparse_fitting_algorithm
-        self._result = None
 
     def fit(self, X, y, **fit_params):
         """Fit PC regression model.
@@ -107,11 +107,11 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         algo = ot.FunctionalChaosAlgorithm(
             X, y, self.distribution, adaptiveStrategy, projectionStrategy)
         algo.run()
-        self._result = algo.getResult()
-        output_dimension = self._result.getMetaModel().getOutputDimension()
+        self.result_ = algo.getResult()
+        output_dimension = self.result_.getMetaModel().getOutputDimension()
 
         # sensitivity
-        si = ot.FunctionalChaosSobolIndices(self._result)
+        si = ot.FunctionalChaosSobolIndices(self.result_)
         if output_dimension == 1:
             self.feature_importances_ = [
                 si.getSobolIndex(i) for i in range(input_dimension)]
@@ -137,9 +137,8 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
             Predictions at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
-        return np.array(self._result.getMetaModel()(X))
+        check_is_fitted(self)
+        return np.array(self.result_.getMetaModel()(X))
 
 
 class Kriging(BaseEstimator, RegressorMixin):
@@ -165,10 +164,9 @@ class Kriging(BaseEstimator, RegressorMixin):
         super(Kriging, self).__init__()
         self.kernel = kernel
         self.basis = basis
-        self._result = None
         self.n_iter_opt = n_iter_opt
         self.normalize_data = normalize_data
-        self.linalg_meth = str(linalg_meth).upper()
+        self.linalg_meth = linalg_meth
 
     def fit(self, X, y, **fit_params):
         """Fit Kriging regression model.
@@ -203,7 +201,8 @@ class Kriging(BaseEstimator, RegressorMixin):
                                    "BasisFactory(" + str(input_dimension) + ").build()")
         else:
             basisCollection = ot.Basis(self.basis)
-        ot.ResourceMap.SetAsString("KrigingAlgorithm-LinearAlgebra",  self.linalg_meth)
+        ot.ResourceMap.SetAsString(
+            "KrigingAlgorithm-LinearAlgebra",  str(self.linalg_meth).upper())
         algo = ot.KrigingAlgorithm(
             X, y, covarianceModel, basisCollection, self.normalize_data)
         if self.n_iter_opt:
@@ -213,7 +212,7 @@ class Kriging(BaseEstimator, RegressorMixin):
         else:
             algo.setOptimizeParameters(False)
         algo.run()
-        self._result = algo.getResult()
+        self.result_ = algo.getResult()
         return self
 
     def predict(self, X, return_std=False):
@@ -235,16 +234,14 @@ class Kriging(BaseEstimator, RegressorMixin):
             Standard deviation of predictive distribution at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
-
-        y_mean = np.array(self._result.getMetaModel()(X))
+        check_is_fitted(self)
+        y_mean = np.array(self.result_.getMetaModel()(X))
 
         if return_std:
             # Do not perfom conditional covariance on sample as it is compute
             # a full covariance matrix & we focus only on diagonal
             # TODO update using new API (getConditionalVariance)
-            y_std = np.array([self._result.getConditionalCovariance(x) for x in X])
+            y_std = np.array([self.result_.getConditionalCovariance(x) for x in X])
             return y_mean, y_std
         else:
             return y_mean
@@ -267,7 +264,6 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
         self.nk = nk
         self.max_rank = max_rank
         self.distribution = distribution
-        self._result = None
 
     def fit(self, X, y, **fit_params):
         """Fit Tensor regression model.
@@ -304,7 +300,7 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
                                                [self.nk] * input_dimension,
                                                self.max_rank)
         algo.run()
-        self._result = algo.getResult()
+        self.result_ = algo.getResult()
         return self
 
     def predict(self, X):
@@ -321,9 +317,8 @@ class TensorApproximation(BaseEstimator, RegressorMixin):
             Predictions at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
-        return np.array(self._result.getMetaModel()(X))
+        check_is_fitted(self)
+        return np.array(self.result_.getMetaModel()(X))
 
 
 class LinearModel(BaseEstimator, RegressorMixin):
@@ -331,7 +326,6 @@ class LinearModel(BaseEstimator, RegressorMixin):
     def __init__(self):
         """Linear model estimator."""
         super(LinearModel, self).__init__()
-        self._result = None
 
     def fit(self, X, y, **fit_params):
         """Fit Linear regression model.
@@ -350,7 +344,7 @@ class LinearModel(BaseEstimator, RegressorMixin):
         """
         algo = ot.LinearModelAlgorithm(X, y)
         algo.run()
-        self._result = algo.getResult()
+        self.result_ = algo.getResult()
         return self
 
     def predict(self, X):
@@ -367,6 +361,5 @@ class LinearModel(BaseEstimator, RegressorMixin):
             Predictions at query points.
 
         """
-        if self._result is None:
-            raise RuntimeError('call fit first')
-        return np.array(self._result.getMetaModel()(X))
+        check_is_fitted(self)
+        return np.array(self.result_.getMetaModel()(X))

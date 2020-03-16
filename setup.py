@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Setup script for otsklearn
 ==========================
