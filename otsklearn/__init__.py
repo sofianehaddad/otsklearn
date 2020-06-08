@@ -6,6 +6,7 @@
 """
 
 from .otsklearn import *
+from .sklearn_function import *
 
 __version__ = "0.1"
 
