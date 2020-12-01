@@ -3,27 +3,6 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
-
-def BuildDistribution(X, level=0.01):
-    # return ot.FunctionalChaosAlgorithm.BuildDistribution(X)
-    input_dimension = len(X[1])
-    marginals = []
-    for j in range(input_dimension):
-        marginals.append(ot.HistogramFactory().build(X[:, j:j+1]))
-    isIndependent = True
-    for j in range(input_dimension):
-        marginalJ = X[:, j:j+1]
-        for i in range(j + 1, input_dimension):
-            marginalI = X[:, i:i+1]
-            testResult = ot.HypothesisTest.Spearman(marginalI, marginalJ, level)
-            isIndependent = isIndependent and testResult.getBinaryQualityMeasure()
-    copula = ot.IndependentCopula(input_dimension)
-    if not isIndependent:
-        copula = ot.NormalCopulaFactory().build(X)
-    distribution = ot.ComposedDistribution(marginals, copula)
-    return distribution
-
-
 class FunctionalChaos(BaseEstimator, RegressorMixin):
 
     def __init__(self, degree=2, sparse=False, enumeratef='linear', q=0.7,
@@ -79,7 +58,7 @@ class FunctionalChaos(BaseEstimator, RegressorMixin):
         if (len(np.shape(y)) != 2):
             raise ValueError("y has incorrect shape.")
         if self.distribution is None:
-            self.distribution = BuildDistribution(X)
+            self.distribution = ot.MetaModelAlgorithm.BuildDistribution(X)
         if self.enumeratef == 'linear':
             enumerateFunction = ot.LinearEnumerateFunction(input_dimension)
         elif self.enumeratef == 'hyperbolic':
