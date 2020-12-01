@@ -217,9 +217,8 @@ class Kriging(BaseEstimator, RegressorMixin):
         if return_std:
             # Do not perfom conditional covariance on sample as it is compute
             # a full covariance matrix & we focus only on diagonal
-            # TODO update using new API (getConditionalVariance)
-            y_std = np.array([self.result_.getConditionalCovariance(x) for x in X])
-            return y_mean, y_std
+            y_std = np.array([ np.sqrt(self.result_.getConditionalMarginalVariance(x)) for x in X])
+            return y_mean, y_std.reshape(-1,1)
         else:
             return y_mean
 
